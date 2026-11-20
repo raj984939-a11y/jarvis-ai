@@ -1,0 +1,204 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#080d16">
+<title>J.A.R.V.I.S. | AI Command Center</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#080d16;color:#eaf3ff;font-family:Arial,sans-serif}
+header{padding:24px 18px;text-align:center;border-bottom:1px solid #203247}
+h1{letter-spacing:5px;margin:5px;color:#69d9ff}
+.sub{color:#829bb2;font-size:12px;letter-spacing:2px}
+main{max-width:750px;margin:auto;padding:18px}
+.card{background:#101b29;border:1px solid #24394e;border-radius:15px;padding:16px;margin-bottom:16px}
+h2{font-size:16px;color:#8cddff}
+textarea,input{width:100%;background:#080f19;color:white;border:1px solid #30475e;border-radius:9px;padding:13px;font:14px Arial;margin:7px 0}
+textarea{min-height:100px;resize:vertical}
+button{background:#087eae;color:white;border:0;padding:12px 15px;border-radius:9px;font-weight:bold;margin:4px 2px;cursor:pointer}
+button.secondary{background:#26394c}
+button:disabled{opacity:.4}
+.ai{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid #26394c}
+.ai:last-child{border:0}
+small,.muted{color:#8ca4ba}
+.status{color:#7ee3b4;font-size:12px}
+#final{white-space:pre-wrap;line-height:1.6}
+footer{text-align:center;padding:25px;color:#6f879c;font-size:12px}
+</style>
+</head>
+<body>
+<header>
+<h1>J.A.R.V.I.S.</h1>
+<div class="sub">PERSONAL AI COMMAND CENTER</div>
+<p class="status">● SYSTEM ONLINE — V1.0</p>
+</header>
+
+<main>
+<section class="card">
+<h2>01 / ASK JARVIS</h2>
+<textarea id="question" placeholder="Enter your question..."></textarea>
+<button onclick="prepare()">Prepare for all 5 AIs</button>
+<button class="secondary" onclick="clearAll()">New question</button>
+<p class="muted" id="notice">Waiting for your command.</p>
+</section>
+
+<section class="card">
+<h2>02 / AI CONNECTIONS</h2>
+<div id="services"></div>
+</section>
+
+<section class="card">
+<h2>03 / COLLECT FIVE RESPONSES</h2>
+<p class="muted">Open each AI, submit the copied question, then paste its answer below.</p>
+<div id="collect"></div>
+</section>
+
+<section class="card">
+<h2>04 / FIVE-RESPONSE VERIFICATION</h2>
+<p id="count" class="status">0 / 5 responses received</p>
+<button onclick="makeSynthesis()">Generate synthesis prompt</button>
+<p class="muted">Synthesis is enabled only when all five answers are provided.</p>
+</section>
+
+<section class="card">
+<h2>05 / FINAL JARVIS ANSWER</h2>
+<p class="muted">Copy the synthesis prompt into an AI assistant, then paste its result here.</p>
+<textarea id="final" placeholder="Paste your final consolidated answer here..."></textarea>
+<button onclick="saveFinal()">Save answer</button>
+<button class="secondary" onclick="copyText('final')">Copy answer</button>
+</section>
+
+<section class="card">
+<h2>06 / MISSION HISTORY</h2>
+<div id="history" class="muted">No saved questions yet.</div>
+</section>
+</main>
+<footer>MISSION JARVIS · V1.0 · YOUR PERSONAL AI SYSTEM</footer>
+
+<script>
+const ais=[
+["ChatGPT","https://chatgpt.com/"],
+["Gemini","https://gemini.google.com/"],
+["Claude","https://claude.ai/"],
+["Copilot","https://copilot.microsoft.com/"],
+["Perplexity","https://www.perplexity.ai/"]
+];
+
+const $=id=>document.getElementById(id);
+
+function render(){
+$("services").innerHTML=ais.map((a,i)=>`
+<div class="ai"><span>${a[0]} <small>AI assistant</small></span>
+<button onclick="openAI(${i})">Open AI ↗</button></div>`).join("");
+
+$("collect").innerHTML=ais.map((a,i)=>`
+<div><h3>${a[0]}</h3>
+<textarea id="answer${i}" placeholder="Paste ${a[0]}'s response here"></textarea>
+</div>`).join("");
+
+ais.forEach((a,i)=>$("answer"+i).addEventListener("input",updateCount));
+updateCount();
+}
+
+function openAI(i){
+window.open(ais[i][1],"_blank");
+}
+
+function prepare(){
+let q=$("question").value.trim();
+if(!q){alert("Enter a question first.");return;}
+let prompt="Please answer this question clearly and accurately. Explain your reasoning and mention uncertainty where relevant.\n\nQUESTION:\n"+q;
+localStorage.setItem("jarvis_question",q);
+localStorage.setItem("jarvis_prompt",prompt);
+navigator.clipboard?.writeText(prompt);
+$("notice").textContent="Question prepared. Copy it into each AI assistant.";
+alert("Question prepared. Paste the same question into all five AI assistants.");
+}
+
+function updateCount(){
+let n=ais.filter((a,i)=>$("answer"+i)?.value.trim()).length;
+$("count").textContent=n+" / 5 responses received";
+}
+
+function makeSynthesis(){
+let q=$("question").value.trim();
+let answers=ais.map((a,i)=>$("answer"+i).value.trim());
+if(!q){alert("Enter your original question.");return;}
+if(answers.some(a=>!a)){
+alert("JARVIS requires all five responses. Missing responses must be collected first.");
+return;
+}
+let prompt=`You are JARVIS, an independent answer synthesis assistant.
+
+Original question:
+${q}
+
+CHATGPT RESPONSE:
+${answers[0]}
+
+GEMINI RESPONSE:
+${answers[1]}
+
+CLAUDE RESPONSE:
+${answers[2]}
+
+COPILOT RESPONSE:
+${answers[3]}
+
+PERPLEXITY RESPONSE:
+${answers[4]}
+
+Compare all five responses. Identify agreements, disagreements, unsupported claims and uncertainties. Do not assume the majority is correct. Produce one accurate consolidated answer, explaining what needs verification.`;
+
+navigator.clipboard?.writeText(prompt);
+$("notice").textContent="All five responses verified. Synthesis prompt copied if clipboard permission is available.";
+alert("All 5 responses received. Synthesis prompt prepared. Paste it into an AI assistant to create the final answer.");
+}
+
+function copyText(id){
+let value=id==="prompt"?localStorage.getItem("jarvis_prompt"):$(id).value;
+if(!value){alert("Nothing to copy.");return;}
+navigator.clipboard.writeText(value).then(()=>alert("Copied!")).catch(()=>alert("Select and copy the text manually."));
+}
+
+function saveFinal(){
+let q=$("question").value.trim();
+let a=$("final").value.trim();
+if(!a){alert("Paste a final answer first.");return;}
+let h=JSON.parse(localStorage.getItem("jarvis_history")||"[]");
+h.unshift({q,a,date:new Date().toLocaleString()});
+localStorage.setItem("jarvis_history",JSON.stringify(h.slice(0,20)));
+showHistory();
+alert("Answer saved on this device.");
+}
+
+function showHistory(){
+let h=JSON.parse(localStorage.getItem("jarvis_history")||"[]");
+$("history").innerHTML=h.length?h.map(x=>`<div class="card"><b>${escapeHTML(x.q)}</b><p>${escapeHTML(x.date)}</p><button onclick="viewAnswer(${h.indexOf(x)})">View answer</button></div>`).join(""):"No saved questions yet.";
+}
+
+function viewAnswer(i){
+let h=JSON.parse(localStorage.getItem("jarvis_history")||"[]");
+if(h[i])$("final").value=h[i].a;
+}
+
+function escapeHTML(s){
+return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function clearAll(){
+if(!confirm("Start a new question? Saved history will remain."))return;
+$("question").value="";
+$("final").value="";
+ais.forEach((a,i)=>$("answer"+i).value="");
+$("notice").textContent="Waiting for your command.";
+updateCount();
+}
+
+render();
+showHistory();
+</script>
+</body>
+</html>
