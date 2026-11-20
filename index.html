@@ -140,6 +140,98 @@ function newMission(){if(!confirm("Start a new mission? Your saved history will 
 $("question").addEventListener("input",persist);$("final").addEventListener("input",persist);$("synthesis").addEventListener("input",persist);
 render();
 </script>
+ 
+<!-- JARVIS VOICE ASSISTANT -->
+<section id="jarvis-voice" style="max-width:600px;margin:25px auto;padding:20px;border:1px solid #ddd;border-radius:16px;font-family:Arial,sans-serif;background:#fff;color:#222;">
+  <h2>🎙️ Talk with JARVIS</h2>
+  <p id="jarvis-status">Voice assistant ready.</p>
+
+  <label for="jarvis-question">Your message</label>
+  <textarea id="jarvis-question" rows="3" style="width:100%;box-sizing:border-box;margin:10px 0;padding:12px;border:1px solid #ccc;border-radius:10px;" placeholder="Type or speak your question..."></textarea>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <button id="jarvis-listen" style="padding:12px;border:0;border-radius:9px;background:#222;color:white;">🎤 Listen</button>
+    <button id="jarvis-stop" style="padding:12px;border:0;border-radius:9px;">Stop listening</button>
+    <button id="jarvis-copy" style="padding:12px;border:0;border-radius:9px;">Copy question</button>
+  </div>
+
+  <hr style="margin:20px 0;border:0;border-top:1px solid #ddd;">
+
+  <label for="jarvis-answer">JARVIS response</label>
+  <textarea id="jarvis-answer" rows="4" style="width:100%;box-sizing:border-box;margin:10px 0;padding:12px;border:1px solid #ccc;border-radius:10px;" placeholder="Paste an AI response here, or type something for JARVIS to read aloud..."></textarea>
+
+  <button id="jarvis-speak" style="padding:12px 18px;border:0;border-radius:9px;background:#222;color:white;">🔊 Speak response</button>
+</section>
+
+<script>
+(function () {
+  const question = document.getElementById("jarvis-question");
+  const answer = document.getElementById("jarvis-answer");
+  const status = document.getElementById("jarvis-status");
+
+  const SpeechRecognition =
+    window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  let recognition;
+
+  if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.lang = "en-IN";
+    recognition.interimResults = false;
+
+    recognition.onstart = () => status.textContent = "Listening...";
+    recognition.onresult = (event) => {
+      question.value += (question.value ? " " : "") +
+        event.results[0][0].transcript;
+      status.textContent = "Message captured!";
+    };
+    recognition.onerror = (event) =>
+      status.textContent = "Voice error: " + event.error;
+    recognition.onend = () => {
+      if (status.textContent === "Listening...")
+        status.textContent = "Listening stopped.";
+    };
+  } else {
+    status.textContent = "Speech recognition is not supported in this browser.";
+  }
+
+  document.getElementById("jarvis-listen").onclick = () => {
+    if (recognition) recognition.start();
+  };
+
+  document.getElementById("jarvis-stop").onclick = () => {
+    if (recognition) recognition.stop();
+  };
+
+  document.getElementById("jarvis-copy").onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(question.value);
+      status.textContent = "Question copied!";
+    } catch {
+      status.textContent = "Please select and copy the question manually.";
+    }
+  };
+
+  document.getElementById("jarvis-speak").onclick = () => {
+    if (!("speechSynthesis" in window)) {
+      status.textContent = "Speech output is not supported.";
+      return;
+    }
+    if (!answer.value.trim()) {
+      status.textContent = "Enter a response first.";
+      return;
+    }
+
+    speechSynthesis.cancel();
+    const speech = new SpeechSynthesisUtterance(answer.value);
+    speech.lang = "en-IN";
+    speech.rate = 1;
+    speechSynthesis.speak(speech);
+    status.textContent = "JARVIS is speaking...";
+  };
+})();
+</script>
+<!-- END JARVIS VOICE ASSISTANT -->
 </body>
 </html>
 
